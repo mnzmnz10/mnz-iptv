@@ -141,19 +141,23 @@ function setupAutoUpdate() {
   let autoUpdater;
   try { ({ autoUpdater } = require('electron-updater')); } catch { return; }
   autoUpdater.autoDownload = true;
-  const toast = (m) => { if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('app-toast', m); };
-  autoUpdater.on('update-available', (i) => toast('Güncelleme bulundu (' + (i && i.version || '') + '), indiriliyor…'));
-  autoUpdater.on('download-progress', (p) => toast('Güncelleme indiriliyor… %' + Math.round(p.percent)));
+  autoUpdater.autoInstallOnAppQuit = true;   // if user picks "Sonra", install silently on next quit
+  const send = (ch, payload) => { if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send(ch, payload); };
+  autoUpdater.on('update-available', (i) => send('update-status', { phase: 'available', version: i && i.version }));
+  autoUpdater.on('update-not-available', () => send('update-status', { phase: 'none' }));
+  autoUpdater.on('download-progress', (p) => send('update-progress', { percent: p.percent || 0, bps: p.bytesPerSecond || 0 }));
   autoUpdater.on('update-downloaded', async (i) => {
+    send('update-status', { phase: 'ready', version: i && i.version });
     const { response } = await dialog.showMessageBox(mainWin, {
       type: 'info', buttons: ['Şimdi kur ve yeniden başlat', 'Sonra'], defaultId: 0, cancelId: 1,
       title: 'Güncelleme hazır',
       message: 'Yeni sürüm indirildi' + (i && i.version ? ' (' + i.version + ')' : '') + '.',
-      detail: 'Kurmak için uygulama yeniden başlatılacak.',
+      detail: 'Kurulum arka planda sessizce yapılacak; kurulum sihirbazı açılmaz.',
     });
-    if (response === 0) autoUpdater.quitAndInstall();
+    // isSilent=true -> no NSIS setup window; isForceRunAfter=true -> relaunch app after install
+    if (response === 0) autoUpdater.quitAndInstall(true, true);
   });
-  autoUpdater.on('error', (e) => console.log('[update] error', e && e.message));
+  autoUpdater.on('error', (e) => { send('update-status', { phase: 'error' }); console.log('[update] error', e && e.message); });
   autoUpdater.checkForUpdates().catch((e) => console.log('[update] check failed', e && e.message));
 }
 app.on('window-all-closed', () => { mpv.quit(); if (process.platform !== 'darwin') app.quit(); });

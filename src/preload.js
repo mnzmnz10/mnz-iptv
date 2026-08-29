@@ -38,4 +38,7 @@ contextBridge.exposeInMainWorld('api', {
   setBarTitle: (t) => ipcRenderer.send('bar-title', t),
   openExternal: (url) => ipcRenderer.send('open-external', url),
   onAppToast: (cb) => ipcRenderer.on('app-toast', (_e, m) => cb(m)),
+  // Auto-update
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_e, s) => cb(s)),
+  onUpdateProgress: (cb) => ipcRenderer.on('update-progress', (_e, p) => cb(p)),
 });

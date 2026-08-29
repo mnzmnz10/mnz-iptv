@@ -115,6 +115,17 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+
+  <!-- In-app auto-update indicator -->
+  <div id="updateBar" class="update-bar hidden">
+    <div class="update-row">
+      <span class="update-spin">⟳</span>
+      <span id="updateText">Güncelleme indiriliyor…</span>
+      <span id="updatePct">%0</span>
+    </div>
+    <div class="update-track"><div id="updateFill"></div></div>
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>

@@ -218,6 +218,31 @@ function initAuto() {
   applyAuto(on);
 }
 
+// ---------- Auto-update indicator ----------
+function fmtSpeed(bps) { if (!bps) return ''; return bps >= 1e6 ? (bps / 1e6).toFixed(1) + ' MB/s' : Math.round(bps / 1e3) + ' KB/s'; }
+api.onUpdateStatus((s) => {
+  const bar = $('updateBar');
+  if (!s) return;
+  if (s.phase === 'available') {
+    $('updateText').textContent = 'Güncelleme indiriliyor' + (s.version ? ' (' + s.version + ')' : '') + '…';
+    $('updatePct').textContent = '%0'; $('updateFill').style.width = '0%';
+    bar.classList.remove('hidden', 'ready');
+  } else if (s.phase === 'ready') {
+    $('updateText').textContent = 'Güncelleme hazır — kuruluyor';
+    $('updatePct').textContent = '%100'; $('updateFill').style.width = '100%';
+    bar.classList.add('ready'); bar.classList.remove('hidden');
+  } else if (s.phase === 'none' || s.phase === 'error') {
+    bar.classList.add('hidden');
+  }
+});
+api.onUpdateProgress((p) => {
+  const pct = Math.round(p.percent || 0);
+  $('updateBar').classList.remove('hidden', 'ready');
+  $('updateFill').style.width = pct + '%';
+  $('updatePct').textContent = '%' + pct;
+  $('updateText').textContent = 'Güncelleme indiriliyor… ' + fmtSpeed(p.bps);
+});
+
 api.onAppToast((m) => toast(m));   // update progress / status from main
 let toastT = null;
 function toast(msg) {
