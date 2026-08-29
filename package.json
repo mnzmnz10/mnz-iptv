@@ -1,6 +1,6 @@
 {
   "name": "mnz-iptv",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MNZ IPTV — Xtream Codes player (Electron + mpv)",
   "main": "src/main.js",
   "scripts": {
