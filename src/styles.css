@@ -124,6 +124,18 @@ body.playing #body { grid-template-columns: 260px 400px minmax(0, 1fr); }
 .item.active { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-sm); }
 .item.resume-cat { color: var(--accent); font-weight: 700; }
 .item.resume-cat.active { color: var(--on-accent); }
+.item.fav-cat { color: #f59e0b; font-weight: 700; }
+.item.fav-cat.active { color: var(--on-accent); }
+.item.all-cat, .item.recent-cat { font-weight: 700; }
+.item.all-cat.active, .item.recent-cat.active { color: var(--on-accent); }
+
+/* favorite heart on cards (top-left, mirrors card-del) */
+.card-fav { position: absolute; top: 6px; left: 6px; z-index: 3; width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff; border: none; font-size: 15px; line-height: 1; padding: 0; opacity: 0;
+  display: flex; align-items: center; justify-content: center; transition: .14s ease; backdrop-filter: blur(3px); cursor: pointer; }
+.card:hover .card-fav { opacity: 1; }
+.card-fav.on { opacity: 1; color: #ff4d6d; }
+.card-fav:hover { background: rgba(0,0,0,.75); }
 
 /* resume progress bar on cards */
 .card .thumb { position: relative; }

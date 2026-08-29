@@ -48,6 +48,32 @@ function maybeSaveProgress() {
   lastSave = now; writeWatch();
 }
 
+// ---------- Favorites ----------
+function getFavs() { try { return JSON.parse(localStorage.getItem('favs') || '{}'); } catch { return {}; } }
+function saveFavs(f) { try { localStorage.setItem('favs', JSON.stringify(f)); } catch {} }
+function favKeyOf(x) {
+  if (tab === 'series') return 'series:' + x.series_id;
+  if (tab === 'live')   return 'live:' + x.stream_id;
+  return 'movie:' + x.stream_id;
+}
+function isFav(x) { return !!getFavs()[favKeyOf(x)]; }
+function toggleFav(x) {
+  const f = getFavs(), k = favKeyOf(x);
+  if (f[k]) delete f[k];
+  else f[k] = { key: k, tab, item: { ...x, name: x.name || x.title, poster: posterOf(x) }, addedAt: Date.now() };
+  saveFavs(f);
+}
+function favFor(t) { return Object.values(getFavs()).filter(e => e.tab === t).sort((a, b) => b.addedAt - a.addedAt); }
+
+// ---------- "Tümü" cache (global search + recently added) ----------
+const allCache = {};   // tab -> full item list
+async function fetchAll() {
+  if (allCache[tab]) return allCache[tab];
+  const data = await (tab === 'live' ? api.live(null) : tab === 'movie' ? api.vod(null) : api.series(null));
+  allCache[tab] = Array.isArray(data) ? data : [];
+  return allCache[tab];
+}
+
 // ---------- Accounts (multiple, saved locally) ----------
 function getAccounts() { try { return JSON.parse(localStorage.getItem('accounts') || '[]'); } catch { return []; } }
 function saveAccounts(a) { localStorage.setItem('accounts', JSON.stringify(a)); }
@@ -153,8 +179,15 @@ async function refreshList(silent) {
   try {
     const fresh = await (tab === 'live' ? api.liveCats() : tab === 'movie' ? api.vodCats() : api.seriesCats());
     cats = Array.isArray(fresh) ? fresh : [];
+    delete allCache[tab];                       // force "Tümü"/"Yeni eklenenler" to refetch
     renderCats();
-    if (activeCatId) {
+    if (VCAT_LOADERS[activeCatId]) {            // virtual category active
+      const before = items.length;
+      await VCAT_LOADERS[activeCatId]();
+      const added = items.length - before;
+      if (added > 0) toast(`${added} yeni içerik eklendi`);
+      else if (!silent) toast('Liste güncel');
+    } else if (activeCatId) {
       const before = items.length;
       await loadItems(activeCatId);
       const added = items.length - before;
@@ -219,16 +252,26 @@ async function loadCats() {
   } catch (e) { $('cats').innerHTML = `<div class="item">Hata: ${esc(e.message)}</div>`; }
 }
 
+// Virtual categories: id -> loader. Rendered above the real category list.
+const VCAT_LOADERS = { __fav__: loadFav, __all__: loadAll, __recent__: loadRecent, __resume__: loadResume };
+function addVCat(id, label, cls) {
+  const r = div('item ' + (cls || ''), label);
+  r.dataset.id = id;
+  if (activeCatId === id) r.classList.add('active');
+  r.onclick = () => { activeCatId = id; renderCats(); VCAT_LOADERS[id](); };
+  $('cats').appendChild(r);
+}
 function renderCats() {
   const q = $('catSearch').value.toLowerCase();
   const list = cats.filter(c => !q || (c.category_name || '').toLowerCase().includes(q));
   $('cats').innerHTML = '';
-  if ((tab === 'movie' || tab === 'series') && !q && watchFor(tab).length) {
-    const r = div('item resume-cat', '▶ İzlemeye devam et');
-    r.dataset.id = '__resume__';
-    if (activeCatId === '__resume__') r.classList.add('active');
-    r.onclick = () => { activeCatId = '__resume__'; renderCats(); loadResume(); };
-    $('cats').appendChild(r);
+  if (!q) {
+    if (favFor(tab).length) addVCat('__fav__', '⭐ Favoriler', 'fav-cat');
+    addVCat('__all__', '🔍 Tümü (ara)', 'all-cat');
+    if (tab === 'movie' || tab === 'series') {
+      addVCat('__recent__', '🆕 Yeni eklenenler', 'recent-cat');
+      if (watchFor(tab).length) addVCat('__resume__', '▶ İzlemeye devam et', 'resume-cat');
+    }
   }
   for (const c of list) {
     const d = div('item', c.category_name || '(isimsiz)');
@@ -283,6 +326,19 @@ function renderItems() {
       thumb.appendChild(img);
     } else thumb.textContent = thumb.dataset.icon;
     const cap = div('cap', title);
+    const fav = document.createElement('button');
+    fav.className = 'card-fav' + (isFav(x) ? ' on' : '');
+    fav.textContent = isFav(x) ? '♥' : '♡';
+    fav.title = 'Favori';
+    fav.onclick = (ev) => {
+      ev.stopPropagation();
+      toggleFav(x);
+      const on = isFav(x);
+      fav.classList.toggle('on', on); fav.textContent = on ? '♥' : '♡';
+      if (activeCatId === '__fav__') loadFav();   // viewing favorites: drop removed card
+      renderCats();                               // show/hide the ⭐ category
+    };
+    card.appendChild(fav);
     card.appendChild(thumb); card.appendChild(cap);
     if (tab === 'live') card.onclick = () => playLive(x);   // channels: click plays
     else card.onclick = () => openDetail(x);                // movies/series: click opens detail
@@ -335,6 +391,29 @@ function afterWatchChange() {
 }
 function removeWatch(key) { const w = getWatch(); delete w[key]; saveWatch(w); afterWatchChange(); }
 function clearWatchTab(t) { const w = getWatch(); for (const k of Object.keys(w)) if (w[k].tab === t) delete w[k]; saveWatch(w); afterWatchChange(); }
+
+// ---------- Virtual category loaders ----------
+function loadFav() {
+  $('listTitle').textContent = 'Favoriler';
+  items = favFor(tab).map(e => e.item);
+  renderItems();
+  if (!items.length) $('list').innerHTML = '<div class="item">Favori yok — kartlardaki ♡ ile ekle</div>';
+}
+async function loadAll() {
+  $('listTitle').textContent = 'Tümü';
+  $('list').innerHTML = '<div class="item">Yükleniyor…</div>';
+  try { items = await fetchAll(); renderItems(); }
+  catch (e) { $('list').innerHTML = `<div class="item">Hata: ${esc(e.message)}</div>`; }
+}
+async function loadRecent() {
+  $('listTitle').textContent = 'Yeni eklenenler';
+  $('list').innerHTML = '<div class="item">Yükleniyor…</div>';
+  try {
+    const all = await fetchAll();
+    items = all.slice().sort((a, b) => (+(b.added || 0)) - (+(a.added || 0))).slice(0, 60);
+    renderItems();
+  } catch (e) { $('list').innerHTML = `<div class="item">Hata: ${esc(e.message)}</div>`; }
+}
 
 // ---------- Item selection ----------
 function selectCard(card) {
