@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' http: https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;" />
+  <title>MNZ IPTV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400..800&family=Nunito+Sans:opsz,wght@6..12,300..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="login">
+    <div class="login-glow"></div>
+    <div class="login-inner">
+      <div class="login-head">
+        <div class="logo">▶</div>
+        <div class="login-brand">
+          <h1>MNZ IPTV</h1>
+          <p>Xtream Codes yayın oynatıcı</p>
+        </div>
+      </div>
+
+      <div id="pickMode">
+        <div class="pick-label">Hesabını seç</div>
+        <div id="accountGrid" class="account-grid"></div>
+      </div>
+
+      <div id="formMode" class="hidden">
+        <button id="backToPick" class="ghost-btn"><span>←</span> Hesaplara dön</button>
+        <div class="form-card">
+          <div class="form-title" id="formTitle">Yeni hesap</div>
+          <label>Hesap adı</label>
+          <input id="accName" placeholder="Örn. Ev, İş" autocomplete="off" />
+          <label>Sunucu (host:port)</label>
+          <input id="server" placeholder="http://example.com:8080" autocomplete="off" />
+          <label>Kullanıcı adı</label>
+          <input id="username" autocomplete="off" />
+          <label>Şifre</label>
+          <input id="password" type="password" autocomplete="off" />
+          <button id="loginBtn" class="primary" style="width:100%;margin-top:20px;">Kaydet &amp; Giriş</button>
+          <div class="err" id="loginErr"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+    <div id="topbar">
+      <span class="brand">MNZ IPTV</span>
+      <button class="tab active" data-tab="live">Canlı TV</button>
+      <button class="tab" data-tab="movie">Filmler</button>
+      <button class="tab" data-tab="series">Diziler</button>
+      <span class="spacer"></span>
+      <button id="btnRefresh" class="tbtn" title="Listeyi yenile">↻</button>
+      <label class="auto-refresh" title="Belirli aralıklarla otomatik yenile"><input type="checkbox" id="autoRefresh" /> Oto-yenile</label>
+      <span class="acct" id="acct"></span>
+      <button id="logoutBtn">Çıkış</button>
+    </div>
+    <div id="body">
+      <div class="col" id="catsCol">
+        <h3>Kategoriler</h3>
+        <div class="search"><input id="catSearch" placeholder="Kategori ara…" /></div>
+        <div id="cats"></div>
+      </div>
+      <div class="col" id="listCol">
+        <h3 id="listTitle">İçerik</h3>
+        <div class="search"><input id="itemSearch" placeholder="Ara…" /></div>
+        <div id="list"></div>
+      </div>
+      <div id="player">
+        <div id="videoPane"></div>
+        <div id="videoInfo" class="hidden"></div>
+        <div id="placeholder">Bir kanal / film / bölüm seç ve oynat</div>
+        <div id="info" class="hidden"></div>
+        <div id="controls" class="hidden">
+          <button id="btnPause" class="play" title="Oynat/Duraklat (Boşluk)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+          <button id="btnBack" class="c-skip" title="10 sn geri">⟲</button>
+          <button id="btnFwd" class="c-skip" title="10 sn ileri">⟳</button>
+          <span class="title c-title" id="nowTitle"></span>
+          <input type="range" id="seek" min="0" max="1000" value="0" />
+          <span class="time c-time" id="time">0:00 / 0:00</span>
+          <span class="vol c-vol"><button id="btnMute" title="Ses">🔊</button><input type="range" id="vol" min="0" max="100" value="50" /></span>
+          <select id="audioSel" class="trk c-trk hidden" title="Dublaj / ses dili"></select>
+          <select id="subSel" class="trk c-trk hidden" title="Altyazı dili"></select>
+          <button id="btnInfo" class="c-info" title="Video bilgisi">ⓘ</button>
+          <button id="btnFs" title="Tam ekran (F)">⛶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content detail modal -->
+  <div id="detail" class="detail-overlay hidden">
+    <div class="detail-card">
+      <button id="detailClose" class="detail-close" title="Kapat">✕</button>
+      <div class="detail-hero" id="detailHero"></div>
+      <div class="detail-body">
+        <div class="detail-poster"><img id="detailPoster" alt="" /></div>
+        <div class="detail-info">
+          <h2 id="detailTitle">—</h2>
+          <div class="detail-badges" id="detailBadges"></div>
+          <p class="detail-plot" id="detailPlot"></p>
+          <div class="detail-cast-wrap" id="detailCastWrap">
+            <h3>Oyuncular</h3>
+            <div class="detail-cast" id="detailCast"></div>
+          </div>
+          <div id="detailEpisodes" class="detail-episodes hidden"></div>
+          <button id="detailWatch" class="primary detail-watch">▶ Hemen İzle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

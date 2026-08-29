@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+    #x { width: 40px; height: 40px; margin: 4px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(0,0,0,.45); color: #fff; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px); transition: .15s ease; }
+    #x:hover { background: rgba(0,0,0,.72); transform: scale(1.06); }
+    #x svg { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <button id="x" title="Kapat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <script src="close.js"></script>
+</body>
+</html>
